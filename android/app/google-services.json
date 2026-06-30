@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "700834638348",
+    "project_id": "hamrah-274fc",
+    "storage_bucket": "hamrah-274fc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:700834638348:android:a2132f3a314d29321edc29",
+        "android_client_info": {
+          "package_name": "hamrah.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOhvJAGsiRBnJ3wAWlmqjjR_WD0ewMr0I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
