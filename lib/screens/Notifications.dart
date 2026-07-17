@@ -17,25 +17,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   late final StreamSubscription<AppNotification> _notificationSubscription;
 
   List<AppNotification> _notifications = [];
-  
+  bool _loadingHistory = true;
+
   // Unified handler for ride recommendation notification taps
   void _handleNotificationTap(AppNotification notif) {
     setState(() => notif.read = true);
 
     // Handle ride recommendation specifically
-    if (notif.type == 'ride_recommendation' || 
+    if (notif.type == 'ride_recommendation' ||
         (notif.data['type']?.toString() ?? '') == 'ride_recommendation') {
       // Parse the data to pass to RideSearchScreen
       final rideId = notif.data['ride_id']?.toString() ?? '';
       final from   = notif.data['from_address']?.toString() ?? '';
       final to     = notif.data['to_address']?.toString() ?? '';
-      
+
       double? fromLat;
       double? fromLng;
       double? toLat;
       double? toLng;
       DateTime? departureTime;
-      
+
       if (notif.data['from_lat'] != null && notif.data['from_lat'].toString().isNotEmpty) {
         fromLat = double.tryParse(notif.data['from_lat'].toString());
       }
@@ -48,7 +49,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (notif.data['to_lng'] != null && notif.data['to_lng'].toString().isNotEmpty) {
         toLng = double.tryParse(notif.data['to_lng'].toString());
       }
-      
+
       if (notif.data['departure_time'] != null && notif.data['departure_time'].toString().isNotEmpty) {
         try {
           departureTime = DateTime.parse(notif.data['departure_time'].toString());
@@ -87,6 +88,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _notifications =
             List<AppNotification>.from(_notificationService.notifications);
       });
+    });
+    _loadHistory();
+  }
+
+  // Fetches saved history from the backend (includes AI ride recommendations
+  // and any other notification generated while the app wasn't running).
+  Future<void> _loadHistory() async {
+    setState(() => _loadingHistory = true);
+    await _notificationService.loadHistoryFromBackend();
+    if (!mounted) return;
+    setState(() {
+      _notifications = List<AppNotification>.from(_notificationService.notifications);
+      _loadingHistory = false;
     });
   }
 
@@ -139,6 +153,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               fontSize: 20,
                               fontWeight: FontWeight.bold)),
                     ),
+                    if (_loadingHistory)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF00897B),
+                          ),
+                        ),
+                      ),
                     if (unread > 0)
                       TextButton(
                         onPressed: _markAllRead,

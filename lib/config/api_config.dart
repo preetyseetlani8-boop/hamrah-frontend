@@ -16,7 +16,7 @@ class ApiConfig {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://bobcat-janitor-survival.ngrok-free.dev',
+     defaultValue: 'http://192.168.0.105:8000',
   );
 
   static Uri uri(String path, {Map<String, String>? query}) {

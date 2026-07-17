@@ -50,3 +50,5 @@ build/
 android/.gradle/
 android/build/
 frontend-files.txt
+
+google-services.json

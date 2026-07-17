@@ -135,19 +135,19 @@ class FirebaseNotificationService with WidgetsBindingObserver {
       },
     );
 
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'hamrah_notifications',
-      'Hamrah Notifications',
-      description: 'Notification channel for Hamrah app updates',
-      importance: Importance.max,
-      playSound: true,
-    );
+    //  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    //    'hamrah_notifications',
+    //    'Hamrah Notifications',
+    //    description: 'Notification channel for Hamrah app updates',
+    //    importance: Importance.max,
+    //    playSound: true,
+    //  );
 
-    final androidPlugin =
-        _localNotifications.resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+    //  final androidPlugin =
+    //      _localNotifications.resolvePlatformSpecificImplementation
+    //          AndroidFlutterLocalNotificationsPlugin>();
 
-    await androidPlugin?.createNotificationChannel(channel);
+    //  await androidPlugin?.createNotificationChannel(channel);
   }
 
   Future<void> _setupMessageListeners() async {
@@ -267,6 +267,60 @@ class FirebaseNotificationService with WidgetsBindingObserver {
 
   String _relativeTime(DateTime dateTime) {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Fetches saved notification history from the backend (GET /notifications)
+  /// — this includes AI ride recommendations and every other notification
+  /// type that was persisted server-side, not just live FCM pushes received
+  /// while the app was open.
+  Future<void> loadHistoryFromBackend() async {
+    try {
+      if (UserSession.token.isEmpty) return;
+
+      final response = await http.get(
+        ApiConfig.uri('/notifications'),
+        headers: ApiConfig.jsonHeaders(),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint(
+            'Failed to load notification history: ${response.statusCode} ${response.body}');
+        return;
+      }
+
+      final List<dynamic> raw = jsonDecode(response.body);
+
+      final historyNotifications = raw.map((item) {
+        DateTime createdAt;
+        try {
+          createdAt = DateTime.parse(item['created_at'] as String).toLocal();
+        } catch (_) {
+          createdAt = DateTime.now();
+        }
+
+        final rawData = item['data'];
+        final Map<String, dynamic> dataMap = rawData is Map
+            ? Map<String, dynamic>.from(rawData)
+            : <String, dynamic>{};
+
+        return AppNotification(
+          title: item['title']?.toString() ?? 'Notification',
+          body: item['body']?.toString() ?? '',
+          time: _relativeTime(createdAt),
+          type: item['type']?.toString() ?? 'system',
+          read: item['is_read'] == true,
+          data: dataMap,
+        );
+      }).toList();
+
+      // Backend already returns newest-first (ORDER BY created_at DESC),
+      // so we replace the local list wholesale rather than merging.
+      _notifications
+        ..clear()
+        ..addAll(historyNotifications);
+    } catch (e) {
+      debugPrint('Notification history fetch failed: $e');
+    }
   }
 
   void dispose() {
